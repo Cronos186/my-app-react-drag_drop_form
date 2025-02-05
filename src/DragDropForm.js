@@ -18,6 +18,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { Grid as UIGrid } from "@mui/material";
 import ReactJson from "react-json-view";
 
+// Definición de los campos disponibles para arrastrar y soltar
 const availableFields = [
   { type: "text", label: "Texto", placeholder: "Ingresa texto" },
   {
@@ -28,6 +29,7 @@ const availableFields = [
   { type: "number", label: "Número", placeholder: "Ingresa un número" },
 ];
 
+// Componente para representar un campo arrastrable
 const DraggableField = ({ field }) => {
   const [{ isDragging }, drag] = useDrag({
     type: "FIELD",
@@ -53,6 +55,7 @@ const DraggableField = ({ field }) => {
   );
 };
 
+// Componente para el área donde se sueltan los campos
 const Dropzone = ({ fields, setFields }) => {
   const [, drop] = useDrop({
     accept: "FIELD",
@@ -97,25 +100,49 @@ const Dropzone = ({ fields, setFields }) => {
   );
 };
 
+// Componente para representar un campo dentro del formulario
 const DraggableFieldInForm = ({ field, index, fields, setFields }) => {
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    const updatedFields = [...fields];
-    updatedFields[index] = { ...updatedFields[index], [name]: value };
-    setFields(updatedFields);
-  };
+  const ref = React.useRef(null);
+
+  const [, drop] = useDrop({
+    accept: "FORM_FIELD",
+    hover: (draggedItem) => {
+      if (draggedItem.index === index) return;
+      const updatedFields = [...fields];
+      const [movedField] = updatedFields.splice(draggedItem.index, 1);
+      updatedFields.splice(index, 0, movedField);
+      setFields(updatedFields);
+      draggedItem.index = index;
+    },
+  });
+
+  const [{ isDragging }, drag] = useDrag({
+    type: "FORM_FIELD",
+    item: { index },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  drag(drop(ref));
 
   return (
-    <UIGrid item xs={6}>
+    <UIGrid item xs={6} ref={ref} sx={{ opacity: isDragging ? 0.5 : 1 }}>
       <Paper
-        sx={{ padding: "10px", position: "relative", border: "1px solid #ccc" }}
+        sx={{
+          padding: "10px",
+          position: "relative",
+          border: "1px solid #ccc",
+          cursor: "grab",
+        }}
       >
+        <Typography variant="subtitle2">Arrastra para reordenar</Typography>
         <TextField
           fullWidth
           label="Etiqueta"
           name="label"
           value={field.label}
-          onChange={handleChange}
+          onChange={(e) => handleChange(e, index, fields, setFields)}
           variant="outlined"
           margin="dense"
         />
@@ -124,7 +151,7 @@ const DraggableFieldInForm = ({ field, index, fields, setFields }) => {
           label="Nombre"
           name="name"
           value={field.name}
-          onChange={handleChange}
+          onChange={(e) => handleChange(e, index, fields, setFields)}
           variant="outlined"
           margin="dense"
         />
@@ -133,7 +160,7 @@ const DraggableFieldInForm = ({ field, index, fields, setFields }) => {
           label="Placeholder"
           name="placeholder"
           value={field.placeholder}
-          onChange={handleChange}
+          onChange={(e) => handleChange(e, index, fields, setFields)}
           variant="outlined"
           margin="dense"
         />
@@ -157,9 +184,17 @@ const DraggableFieldInForm = ({ field, index, fields, setFields }) => {
   );
 };
 
+// Función para actualizar los campos al editar
+const handleChange = (e, index, fields, setFields) => {
+  const { name, value } = e.target;
+  const updatedFields = [...fields];
+  updatedFields[index] = { ...updatedFields[index], [name]: value };
+  setFields(updatedFields);
+};
+
 const FormPreviewModal = ({ open, onClose, fields }) => {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>🖥️ Vista Previa del Formulario</DialogTitle>
       <br></br>
       <DialogContent>
@@ -187,6 +222,7 @@ const FormPreviewModal = ({ open, onClose, fields }) => {
   );
 };
 
+// Componente principal del formulario con funcionalidad de arrastrar y soltar
 const DragDropForm = () => {
   const [formFields, setFormFields] = useState([]);
   const [jsonOutput, setJsonOutput] = useState(null);
