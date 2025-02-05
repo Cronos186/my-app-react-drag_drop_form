@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useDrag, useDrop, DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { Formik, Form, Field } from "formik";
+import { Formik, Form } from "formik";
 import {
   TextField,
   Button,
